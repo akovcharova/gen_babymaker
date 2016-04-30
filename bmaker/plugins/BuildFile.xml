@@ -1,0 +1,8 @@
+<export>
+</export>
+<library   name="gen_babymakerbmakerPlugins" file="bmaker_*.cc">
+  <flags   EDM_PLUGIN="1"/>
+  <use name="CommonTools/UtilAlgos"/>
+  <use name="DataFormats/Math"/> 
+  <use name="gen_babymaker/bmaker"/> 
+</library>

@@ -1,0 +1,28 @@
+##################   Provenance   #############
+int run
+int lumiblock
+Long64_t event
+
+################  Truth   ##################
+int nisr_me
+float ht_isr_me
+std::vector<float> mc_pt
+std::vector<float> mc_eta
+std::vector<float> mc_phi
+std::vector<float> mc_mass
+std::vector<int>   mc_id
+std::vector<int>   mc_mom
+int ntruleps
+int ntrumus
+int ntruels
+int ntrutaush
+int ntrutausl
+float isr_tru_pt
+float isr_tru_eta
+float isr_tru_phi
+int gen_cfgid
+int mprod
+int mlsp
+
+################  Weights   ##################
+float weight

@@ -1,0 +1,48 @@
+# Generated on compilation
+baby*.hh
+baby*.cc
+bmaker/interface/release.hh
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.pyc
+*__init_*
+._*
+
+# Compiled Dynamic libraries
+*.so
+*.d
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# Compiled executables
+*.exe
+
+# Generated source files
+bin/*
+
+# emacs backups
+*~
+*#
+
+# Other
+/*.root
+out/*.root
+*.log
+*.pdf
+*.eps
+*.tex
+*.aux
+gmon.out
+out
+/run
+logs
+archive
+.nfs*
+.#-emacs*
+sftp-config.json
