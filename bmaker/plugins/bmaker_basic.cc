@@ -55,14 +55,33 @@ void bmaker_basic::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   ///////////////////// MC hard scatter info ///////////////////////
   if (debug) cout<<"INFO: Retrieving hard scatter info..."<<endl;
-  edm::Handle<LHEEventProduct> lhe_info;
-  iEvent.getByToken(lheInfoToken, lhe_info);
-  writeGenInfo(lhe_info);
+  if (!lheInfoToken.isUninitialized()) {
+    edm::Handle<LHEEventProduct> lhe_info;
+    iEvent.getByToken(lheInfoToken, lhe_info);
+    writeGenInfo(lhe_info);
+  }
 
   //////////////// Weights and systematics //////////////////
   edm::Handle<GenEventInfoProduct> gen_event_info;
   iEvent.getByToken(genEventProdToken, gen_event_info);
+  if (gen_event_info->hasDJRValues()){
+    baby.djr1() = gen_event_info->DJRValues()[0];
+    baby.djr2() = gen_event_info->DJRValues()[1];
+    baby.djr3() = gen_event_info->DJRValues()[2];
+    baby.djr4() = gen_event_info->DJRValues()[3];
+    baby.nme() = gen_event_info->nMEPartons();
+  }
 
+  ////////////////// GEN Jets //////////////////
+  edm::Handle<reco::GenJetCollection> genJets;
+  iEvent.getByToken(genJetsToken, genJets);
+  baby.lead_genjet_pt() = genJets->at(0).pt();
+  baby.ngenjets() = 0;
+  baby.genht()=0;
+  for (size_t ijet(0); ijet< genJets->size(); ijet++){
+    baby.genht() += genJets->at(ijet).pt();
+    if (genJets->at(ijet).pt()>30.) baby.ngenjets() +=1;
+  }
 
   ////////////////// Filling the tree //////////////////
   baby.Fill();
@@ -85,41 +104,24 @@ ______                      _                     _ _   _
 
 
 void bmaker_basic::writeGenInfo(edm::Handle<LHEEventProduct> lhe_info){
-  baby.nisr_me()=0; baby.ht_isr_me()=0.; 
-  for ( unsigned int icount = 0 ; icount < (unsigned int)lhe_info->hepeup().NUP; icount++ ) {
-    unsigned int pdgid = abs(lhe_info->hepeup().IDUP[icount]);
-    int status = lhe_info->hepeup().ISTUP[icount];
-    int mom1id = abs(lhe_info->hepeup().IDUP[lhe_info->hepeup().MOTHUP[icount].first-1]);
-    int mom2id = abs(lhe_info->hepeup().IDUP[lhe_info->hepeup().MOTHUP[icount].second-1]);
-    float px = (lhe_info->hepeup().PUP[icount])[0];
-    float py = (lhe_info->hepeup().PUP[icount])[1];
-    float pt = sqrt(px*px+py*py);
+  // baby.nisr_me()=0; baby.ht_isr_me()=0.; 
+  // for ( unsigned int icount = 0 ; icount < (unsigned int)lhe_info->hepeup().NUP; icount++ ) {
+  //   unsigned int pdgid = abs(lhe_info->hepeup().IDUP[icount]);
+  //   int status = lhe_info->hepeup().ISTUP[icount];
+  //   int mom1id = abs(lhe_info->hepeup().IDUP[lhe_info->hepeup().MOTHUP[icount].first-1]);
+  //   int mom2id = abs(lhe_info->hepeup().IDUP[lhe_info->hepeup().MOTHUP[icount].second-1]);
+  //   float px = (lhe_info->hepeup().PUP[icount])[0];
+  //   float py = (lhe_info->hepeup().PUP[icount])[1];
+  //   float pt = sqrt(px*px+py*py);
 
-    if(status==1 && (pdgid<6 || pdgid==21) && mom1id!=6 && mom2id!=6 && mom1id!=24 && mom2id!=24 
-       && mom1id!=23 && mom2id!=23 && mom1id!=25 && mom2id!=25) {
-       baby.nisr_me()++;
-       baby.ht_isr_me() += pt;
-    }
-
-  } // Loop over generator particles
-  
-  // if(outname.Contains("SMS")){ //Get mgluino and mlsp
-    
-  //   typedef std::vector<std::string>::const_iterator comments_const_iterator;
-    
-  //   comments_const_iterator c_begin = lhe_info->comments_begin();
-  //   comments_const_iterator c_end = lhe_info->comments_end();
-    
-  //   TString model_params;
-  //   for(comments_const_iterator cit=c_begin; cit!=c_end; ++cit) {
-  //     size_t found = (*cit).find("model");
-  //     if(found != std::string::npos)   {
-  //       //    std::cout <<"BABYMAKER: "<< *cit <<"end"<< std::endl;  
-  //       model_params = *cit;
-  //     }
+  //   if(status==1 && (pdgid<6 || pdgid==21) && mom1id!=6 && mom2id!=6 && mom1id!=24 && mom2id!=24 
+  //      && mom1id!=23 && mom2id!=23 && mom1id!=25 && mom2id!=25) {
+  //      baby.nisr_me()++;
+  //      baby.ht_isr_me() += pt;
   //   }
-  //   mcTool->getMassPoints(model_params,baby.mgluino(),baby.mlsp());
+
   // }
+
 } // writeGenInfo
 
 void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles){
@@ -136,7 +138,6 @@ void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles
     size_t momid = abs(mcTool->mom(mc, mom));
     bool isTop(id==6);
     bool isNewPhysics(id>=bsmid);
-    bool isGluino(id==1000021);
     bool isZ(id==23);
     bool isW(id==24);
     bool bTopOrBSM(id==5 && (momid==6 || momid>=bsmid));
@@ -149,7 +150,8 @@ void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles
     if(isLast){
       //////// Finding p4 of ME ISR system
       if((isTop && outname.Contains("TTJets"))
-         || (isGluino && (outname.Contains("SMS") || outname.Contains("RPV")))
+         || (id==1000021 && (outname.BeginsWith("T1") || outname.BeginsWith("T5")))
+	 || (id==1000006 && (outname.Contains("T2tt") || outname.Contains("T2bt")))
          || (isZ && outname.Contains("DY"))) isr_p4 -= mc.p4();
 
       //////// Saving interesting true particles
@@ -162,6 +164,7 @@ void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles
         baby.mc_phi().push_back(mc.phi());
         baby.mc_mass().push_back(mc.mass());
         baby.mc_mom().push_back(mcTool->mom(mc,mom));
+	baby.mc_direct_mom().push_back(mc.mother()->pdgId());
       }
 
       //////// Counting true leptons
@@ -175,6 +178,7 @@ void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles
           baby.mc_eta().push_back(tauDaughter->eta());
           baby.mc_phi().push_back(tauDaughter->phi());
           baby.mc_mom().push_back(mcTool->mom(*tauDaughter,mom));
+	  baby.mc_direct_mom().push_back(mc.mother()->pdgId());
           baby.ntrutausl()++;
         } else baby.ntrutaush()++;
       }
@@ -205,7 +209,6 @@ void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles
 
 bmaker_basic::bmaker_basic(const edm::ParameterSet& iConfig):
   genPtclToken(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genPtclTag"))),
-  lheInfoToken(consumes<LHEEventProduct>(iConfig.getParameter<edm::InputTag>("lheInfoTag"))),
   genEventProdToken(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("genInfoTag"))),
   genLumiHeaderToken(consumes<GenLumiInfoHeader,edm::InLumi>(iConfig.getParameter<edm::InputTag>("genInfoTag"))),
   outname(TString(iConfig.getParameter<string>("outputFile"))),
@@ -213,11 +216,17 @@ bmaker_basic::bmaker_basic(const edm::ParameterSet& iConfig):
   condor_subtime(iConfig.getParameter<string>("condor_subtime")),
   nevents_sample(iConfig.getParameter<unsigned int>("nEventsSample")),
   nevents(0),
-  debug(iConfig.getParameter<bool>("debugMode"))
+  debug(iConfig.getParameter<bool>("debugMode")),
+  mgp_wf(iConfig.getParameter<bool>("mgp_wf"))
 {
   time(&startTime);
 
   mcTool = new mc_tools();
+
+  edm::InputTag lheInfoTag = iConfig.getParameter<edm::InputTag>("lheInfoTag");
+  if (!mgp_wf && lheInfoTag.label()!="") lheInfoToken = consumes<LHEEventProduct>(lheInfoTag);
+
+  genJetsToken = consumes<reco::GenJetCollection>(edm::InputTag("ak4GenJets"));
 
   outfile = new TFile(outname, "recreate");
   outfile->cd();
@@ -339,10 +348,12 @@ void bmaker_basic::beginLuminosityBlock(edm::LuminosityBlock const& iLumi, edm::
 
   edm::Handle<GenLumiInfoHeader> gen_header;
   iLumi.getByToken(genLumiHeaderToken, gen_header);
-
+  
   gen_cfgid_ = gen_header->randomConfigIndex();
-  string model = gen_header->configDescription();
-  mcTool->getMassPoints(model, mprod_, mlsp_);
+  if (mgp_wf) {
+    string model = gen_header->configDescription();
+    mcTool->getMassPoints(model, mprod_, mlsp_);
+  }
 
 }
 

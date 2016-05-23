@@ -17,6 +17,7 @@
 // FW physics include files
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+#include "DataFormats/JetReco/interface/GenJetCollection.h"
 
 // ROOT include files
 #include "TTree.h"
@@ -55,6 +56,7 @@ public:
 
   // Input parameters
   edm::EDGetTokenT<reco::GenParticleCollection> genPtclToken;
+  edm::EDGetTokenT<reco::GenJetCollection> genJetsToken;
   edm::EDGetTokenT<LHEEventProduct> lheInfoToken;
   edm::EDGetTokenT<GenEventInfoProduct> genEventProdToken;
   edm::EDGetTokenT<GenLumiInfoHeader> genLumiHeaderToken;
@@ -65,6 +67,7 @@ public:
   unsigned int nevents;
 
   bool debug;
+  bool mgp_wf;
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 

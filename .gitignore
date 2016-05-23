@@ -40,6 +40,7 @@ out/*.root
 *.aux
 gmon.out
 out
+python/arxiv
 /run
 logs
 archive

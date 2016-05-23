@@ -4,14 +4,13 @@ int lumiblock
 Long64_t event
 
 ################  Truth   ##################
-int nisr_me
-float ht_isr_me
 std::vector<float> mc_pt
 std::vector<float> mc_eta
 std::vector<float> mc_phi
 std::vector<float> mc_mass
 std::vector<int>   mc_id
 std::vector<int>   mc_mom
+std::vector<int>   mc_direct_mom
 int ntruleps
 int ntrumus
 int ntruels
@@ -23,6 +22,16 @@ float isr_tru_phi
 int gen_cfgid
 int mprod
 int mlsp
+
+int ngenjets
+float genht
+float lead_genjet_pt
+
+float djr1
+float djr2
+float djr3
+float djr4
+int nme
 
 ################  Weights   ##################
 float weight

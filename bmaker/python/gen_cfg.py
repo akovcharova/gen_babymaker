@@ -42,12 +42,12 @@ process.baby_basic = cms.EDAnalyzer('bmaker_basic',
                                     inputFiles = cms.vstring(options.inputFiles),
                                     nEventsSample = cms.uint32(options.nEventsSample),
                                     debugMode = cms.bool(False),
+                                    mgp_wf = cms.bool(True), # if True read  GenLumiInfoHeader, to get GEN config
                                     # genPtclTag = cms.InputTag("prunedGenParticles"),
                                     genPtclTag = cms.InputTag("genParticles"),
                                     # lheInfoTag = cms.InputTag("externalLHEProducer"),
-                                    lheInfoTag = cms.InputTag(""),
-                                    genInfoTag = cms.InputTag("generator"),
-                                    mgp_wf = cms.bool(False) # this determines whether to try to read the GenLumiInfoHeader, stands for "multi-gridpack workflow"
+                                    lheInfoTag = cms.InputTag("source"),
+                                    genInfoTag = cms.InputTag("generator")
 )
 
 ###### Setting up number of events, and reporing frequency 
