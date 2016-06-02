@@ -45,7 +45,8 @@ process.baby_basic = cms.EDAnalyzer('bmaker_basic',
                                     mgp_wf = cms.bool(True), # if True read  GenLumiInfoHeader, to get GEN config
                                     # genPtclTag = cms.InputTag("prunedGenParticles"),
                                     genPtclTag = cms.InputTag("genParticles"),
-                                    # lheInfoTag = cms.InputTag("externalLHEProducer"),
+                                    genMETTag = cms.InputTag("genMetTrue"),
+                                     # lheInfoTag = cms.InputTag("externalLHEProducer"),
                                     lheInfoTag = cms.InputTag("source"),
                                     genInfoTag = cms.InputTag("generator")
 )

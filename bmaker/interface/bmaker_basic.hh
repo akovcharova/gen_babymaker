@@ -18,6 +18,7 @@
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "DataFormats/JetReco/interface/GenJetCollection.h"
+#include "DataFormats/METReco/interface/GenMETCollection.h"
 
 // ROOT include files
 #include "TTree.h"
@@ -56,6 +57,7 @@ public:
 
   // Input parameters
   edm::EDGetTokenT<reco::GenParticleCollection> genPtclToken;
+  edm::EDGetTokenT<reco::GenMETCollection> genMETToken;
   edm::EDGetTokenT<reco::GenJetCollection> genJetsToken;
   edm::EDGetTokenT<LHEEventProduct> lheInfoToken;
   edm::EDGetTokenT<GenEventInfoProduct> genEventProdToken;

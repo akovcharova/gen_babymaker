@@ -115,6 +115,11 @@ void mc_tools::printParticle(const reco::GenParticle &mc){
     cout<<mc.daughter(idau)->pdgId();
     if(idau < mc.numberOfDaughters()-1) cout<<", ";
   }
+  // if (mc.isHardProcess()) cout<<" isHardProcess";
+  // if (mc.fromHardProcessDecayed())cout<<" fromHardProcessDecayed";
+  // if (mc.fromHardProcessFinalState())cout<<" fromHardProcessFinalState";
+  // if (mc.isPromptDecayed())cout<<" isPromptDecayed";
+  // if (mc.isPromptFinalState())cout<<" isPromptFinalState";
   cout<<endl;
 
 }
@@ -127,12 +132,15 @@ void mc_tools::getMassPoints(TString mpoints, int &mgluino, int &mlsp){
   mg.Remove(mg.Last('_'));
   mg.Remove(0, mg.Last('_')+1);
 
-  if(!mg.IsFloat() || !ml.IsFloat()){
+  if(!ml.IsFloat()){
     cout<<"ERROR: Improper parsing of mass points"<<endl;
     cout<<"Mass of gluino parsed as \""<<mg<<"\""<<endl;
     cout<<"Mass of LSP parsed as \""<<ml<<"\""<<endl;
     exit(0);
-  }
+  } else if (!mg.IsFloat()){
+    mg = ml;
+    ml = "1";
+  } 
 
   mgluino = mg.Atoi();
   mlsp = ml.Atoi();

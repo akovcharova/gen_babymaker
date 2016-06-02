@@ -20,6 +20,7 @@
 #include "SimDataFormats/GeneratorProducts/interface/GenLumiInfoProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenLumiInfoHeader.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/METReco/interface/GenMET.h"
 
 // ROOT include files
 #include "TFile.h"
@@ -52,6 +53,13 @@ void bmaker_basic::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   edm::Handle<reco::GenParticleCollection> genParticles;
   iEvent.getByToken(genPtclToken, genParticles);
   writeMC(genParticles);
+
+  ////////////////// Gen-level MET  //////////////////
+  if (debug) cout<<"INFO: Writing gen. MET..."<<endl;
+  edm::Handle<reco::GenMETCollection> mets;
+  iEvent.getByToken(genMETToken, mets);
+  const reco::GenMET &genmet = mets->front();
+  baby.gen_met() = genmet.pt();
 
   ///////////////////// MC hard scatter info ///////////////////////
   if (debug) cout<<"INFO: Retrieving hard scatter info..."<<endl;
@@ -127,60 +135,37 @@ void bmaker_basic::writeGenInfo(edm::Handle<LHEEventProduct> lhe_info){
 void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles){
   LVector isr_p4;
   baby.ntruleps()=0; baby.ntrumus()=0; baby.ntruels()=0; baby.ntrutaush()=0; baby.ntrutausl()=0;
-  const size_t bsmid(1000000);
   for (size_t imc(0); imc < genParticles->size(); imc++) {
     const reco::GenParticle &mc = (*genParticles)[imc];
     size_t id = abs(mc.pdgId());
-    bool isLast = mcTool->isLast(mc, id);
-    // mcTool->printParticle(mc); // Prints various properties of the MC particle
-
     const reco::GenParticle *mom = nullptr;
-    size_t momid = abs(mcTool->mom(mc, mom));
-    bool isTop(id==6);
-    bool isNewPhysics(id>=bsmid);
-    bool isZ(id==23);
-    bool isW(id==24);
-    bool bTopOrBSM(id==5 && (momid==6 || momid>=bsmid));
-    bool nuFromZ((id==12 || id==14 || id==16) && momid==23);
-    bool eFromTopZ(id==11 && (momid==24 || momid==23));
-    bool muFromTopZ(id==13 && (momid==24 || momid==23));
-    bool tauFromTopZ(id==15 && (momid==24 || momid==23));
-    bool fromWOrWTau(mcTool->fromWOrWTau(mc));
 
-    if(isLast){
+    if(mc.isHardProcess()){
+      //mcTool->printParticle(mc); // Prints various properties of the MC particle
       //////// Finding p4 of ME ISR system
-      if((isTop && outname.Contains("TTJets"))
+      if((id==6 && outname.Contains("TTJets"))
          || (id==1000021 && (outname.BeginsWith("T1") || outname.BeginsWith("T5")))
 	 || (id==1000006 && (outname.Contains("T2tt") || outname.Contains("T2bt")))
-         || (isZ && outname.Contains("DY"))) isr_p4 -= mc.p4();
+         || (id==23 && outname.Contains("DY"))) isr_p4 -= mc.p4();
 
       //////// Saving interesting true particles
-      if(isTop || isNewPhysics || isZ
-         || isW || bTopOrBSM || eFromTopZ || muFromTopZ 
-         || tauFromTopZ || nuFromZ || fromWOrWTau){
-        baby.mc_id().push_back(mc.pdgId());
-        baby.mc_pt().push_back(mc.pt());
-        baby.mc_eta().push_back(mc.eta());
-        baby.mc_phi().push_back(mc.phi());
-        baby.mc_mass().push_back(mc.mass());
-        baby.mc_mom().push_back(mcTool->mom(mc,mom));
-	baby.mc_direct_mom().push_back(mc.mother()->pdgId());
-      }
+      baby.mc_id().push_back(mc.pdgId());
+      baby.mc_pt().push_back(mc.pt());
+      baby.mc_eta().push_back(mc.eta());
+      baby.mc_phi().push_back(mc.phi());
+      baby.mc_mass().push_back(mc.mass());
+      baby.mc_status().push_back(mc.status());
+      baby.mc_mom().push_back(mcTool->mom(mc,mom));
+      baby.mc_direct_mom().push_back(mc.mother()->pdgId());
+
 
       //////// Counting true leptons
-      if(muFromTopZ) baby.ntrumus()++;
-      if(eFromTopZ)  baby.ntruels()++;
-      if(tauFromTopZ){
+      if(id==11)  baby.ntruels()++;
+      if(id==13) baby.ntrumus()++;
+      if(id==15){
         const reco::GenParticle *tauDaughter(0);
-        if(mcTool->decaysTo(mc, 11, tauDaughter) || mcTool->decaysTo(mc, 13, tauDaughter)){
-          baby.mc_id().push_back(tauDaughter->pdgId());
-          baby.mc_pt().push_back(tauDaughter->pt());
-          baby.mc_eta().push_back(tauDaughter->eta());
-          baby.mc_phi().push_back(tauDaughter->phi());
-          baby.mc_mom().push_back(mcTool->mom(*tauDaughter,mom));
-	  baby.mc_direct_mom().push_back(mc.mother()->pdgId());
-          baby.ntrutausl()++;
-        } else baby.ntrutaush()++;
+        if(mcTool->decaysTo(mc, 11, tauDaughter) || mcTool->decaysTo(mc, 13, tauDaughter)) baby.ntrutausl()++;
+        else baby.ntrutaush()++;
       }
     }
   }
@@ -209,6 +194,7 @@ void bmaker_basic::writeMC(edm::Handle<reco::GenParticleCollection> genParticles
 
 bmaker_basic::bmaker_basic(const edm::ParameterSet& iConfig):
   genPtclToken(consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genPtclTag"))),
+  genMETToken(consumes<reco::GenMETCollection>(iConfig.getParameter<edm::InputTag>("genMETTag"))),
   genEventProdToken(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("genInfoTag"))),
   genLumiHeaderToken(consumes<GenLumiInfoHeader,edm::InLumi>(iConfig.getParameter<edm::InputTag>("genInfoTag"))),
   outname(TString(iConfig.getParameter<string>("outputFile"))),
